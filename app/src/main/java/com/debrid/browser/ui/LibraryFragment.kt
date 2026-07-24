@@ -115,8 +115,16 @@ class LibraryFragment : Fragment() {
     }
 
     private fun applyFilterSort() {
-        val q = binding.filterInput.text?.toString()?.trim()?.lowercase().orEmpty()
-        var list = if (q.isBlank()) all else all.filter { it.filename.lowercase().contains(q) }
+        val q = binding.filterInput.text?.toString()?.trim().orEmpty()
+        var list = if (q.isBlank()) all else {
+            // Release names use dots/underscores as separators ("The.Batman.2022.1080p"),
+            // so normalize both sides and require every query word to appear.
+            val terms = normalize(q).split(' ').filter { it.isNotBlank() }
+            all.filter { item ->
+                val hay = normalize(item.filename)
+                terms.all { hay.contains(it) }
+            }
+        }
         activeCollection?.let { name ->
             val ids = collections.idsIn(name)
             list = list.filter { it.id in ids }
@@ -129,6 +137,10 @@ class LibraryFragment : Fragment() {
         adapter.submitList(list)
         binding.emptyView.visibility = if (list.isEmpty() && all.isNotEmpty()) View.GONE else binding.emptyView.visibility
     }
+
+    /** Lowercase and turn any run of non-alphanumeric characters into a single space. */
+    private fun normalize(s: String): String =
+        s.lowercase().replace(Regex("[^a-z0-9]+"), " ").trim()
 
     private fun showEmpty(msg: String) {
         adapter.submitList(emptyList())
