@@ -1,8 +1,15 @@
 package com.debrid.browser.ui
 
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.debrid.browser.App
 import com.debrid.browser.data.Prefs
@@ -23,12 +30,21 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.toolbar.updatePadding(top = bars.top)
+            binding.root.updatePadding(bottom = bars.bottom)
+            insets
+        }
+
         binding.tokenInput.setText(prefs.apiToken)
         binding.urlInput.setText(prefs.dmmUrl)
         binding.externalPlayerSwitch.isChecked = prefs.preferExternalPlayer
 
         binding.saveButton.setOnClickListener { save() }
         binding.testButton.setOnClickListener { testToken() }
+        binding.getTokenButton.setOnClickListener { openTokenPage() }
+        binding.pasteButton.setOnClickListener { pasteFromClipboard() }
     }
 
     private fun save() {
@@ -38,6 +54,27 @@ class SettingsActivity : AppCompatActivity() {
         prefs.preferExternalPlayer = binding.externalPlayerSwitch.isChecked
         Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
         finish()
+    }
+
+    private fun openTokenPage() {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://real-debrid.com/apitoken")))
+            Toast.makeText(this, "Copy the token, then return and tap Paste", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "No browser found: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun pasteFromClipboard() {
+        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val text = cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.trim().orEmpty()
+        if (text.isBlank()) {
+            Toast.makeText(this, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+            return
+        }
+        binding.tokenInput.setText(text)
+        binding.tokenInput.setSelection(text.length)
+        Toast.makeText(this, "Pasted — now tap Test connection or Save", Toast.LENGTH_SHORT).show()
     }
 
     private fun testToken() {

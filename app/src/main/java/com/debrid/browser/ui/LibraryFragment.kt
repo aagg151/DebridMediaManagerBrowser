@@ -80,9 +80,15 @@ class LibraryFragment : Fragment() {
     private fun refresh() {
         if (!App.instance.prefs.hasToken) {
             showEmpty(getString(com.debrid.browser.R.string.no_token_hint))
+            binding.retryButton.text = getString(com.debrid.browser.R.string.open_settings)
+            binding.retryButton.setOnClickListener {
+                startActivity(Intent(requireContext(), SettingsActivity::class.java))
+            }
             binding.swipeRefresh.isRefreshing = false
             return
         }
+        binding.retryButton.text = getString(com.debrid.browser.R.string.retry)
+        binding.retryButton.setOnClickListener { refresh() }
         binding.swipeRefresh.isRefreshing = true
         binding.emptyView.visibility = View.GONE
         lifecycleScope.launch {

@@ -20,6 +20,10 @@
     <string name="external_player_label">Use external video player (VLC/MX) instead of built-in</string>
     <string name="save">Save</string>
     <string name="test_connection">Test connection</string>
+    <string name="get_token">Get token</string>
+    <string name="paste">Paste</string>
+    <string name="token_help">Tap \"Get token\", log in if needed, copy the token shown, come back and tap \"Paste\", then Save. The app does not read the token automatically — you must copy it from that page.</string>
+    <string name="open_settings">Open Settings</string>
     <string name="collection_all">Collection: All</string>
     <string name="collection_prefix">Collection: %1$s</string>
     <string name="new_collection">＋ New collection…</string>
