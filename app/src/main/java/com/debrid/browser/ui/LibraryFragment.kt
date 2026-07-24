@@ -32,8 +32,11 @@ class LibraryFragment : Fragment() {
     private val api get() = App.instance.api
     private lateinit var adapter: LibraryAdapter
 
+    private val collections get() = App.instance.collections
+
     private var all: List<TorrentItem> = emptyList()
     private var sortMode = SortMode.DATE
+    private var activeCollection: String? = null   // null == "All"
 
     private enum class SortMode { DATE, NAME, SIZE }
 
@@ -45,11 +48,16 @@ class LibraryFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        adapter = LibraryAdapter(onOpen = ::openTorrent, onDelete = ::confirmDelete)
+        adapter = LibraryAdapter(
+            onOpen = ::openTorrent,
+            onDelete = ::confirmDelete,
+            onLongPress = ::showAssignDialog
+        )
         binding.recycler.layoutManager = LinearLayoutManager(requireContext())
         binding.recycler.adapter = adapter
 
         binding.swipeRefresh.setOnRefreshListener { refresh() }
+        binding.collectionsButton.setOnClickListener { showCollectionsMenu() }
 
         binding.filterInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
@@ -60,6 +68,7 @@ class LibraryFragment : Fragment() {
         binding.sortButton.setOnClickListener { cycleSort() }
         binding.retryButton.setOnClickListener { refresh() }
 
+        updateCollectionsButton()
         refresh()
     }
 
@@ -102,6 +111,10 @@ class LibraryFragment : Fragment() {
     private fun applyFilterSort() {
         val q = binding.filterInput.text?.toString()?.trim()?.lowercase().orEmpty()
         var list = if (q.isBlank()) all else all.filter { it.filename.lowercase().contains(q) }
+        activeCollection?.let { name ->
+            val ids = collections.idsIn(name)
+            list = list.filter { it.id in ids }
+        }
         list = when (sortMode) {
             SortMode.DATE -> list.sortedByDescending { it.added }
             SortMode.NAME -> list.sortedBy { it.filename.lowercase() }
@@ -115,6 +128,112 @@ class LibraryFragment : Fragment() {
         adapter.submitList(emptyList())
         binding.emptyText.text = msg
         binding.emptyView.visibility = View.VISIBLE
+    }
+
+    // ---- Collections (local "folders") ------------------------------------
+
+    private fun updateCollectionsButton() {
+        binding.collectionsButton.text = activeCollection
+            ?.let { getString(com.debrid.browser.R.string.collection_prefix, it) }
+            ?: getString(com.debrid.browser.R.string.collection_all)
+    }
+
+    private fun showCollectionsMenu() {
+        val names = collections.names()
+        val labels = buildList {
+            add("All")
+            addAll(names)
+            add(getString(com.debrid.browser.R.string.new_collection))
+            add(getString(com.debrid.browser.R.string.manage_collections))
+        }.toTypedArray()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Collections")
+            .setItems(labels) { _, which ->
+                when {
+                    which == 0 -> { activeCollection = null; updateCollectionsButton(); applyFilterSort() }
+                    which == labels.lastIndex -> manageCollections()
+                    which == labels.lastIndex - 1 -> promptNewCollection(assignItem = null)
+                    else -> {
+                        activeCollection = names[which - 1]
+                        updateCollectionsButton()
+                        applyFilterSort()
+                    }
+                }
+            }
+            .show()
+    }
+
+    private fun manageCollections() {
+        val names = collections.names()
+        if (names.isEmpty()) {
+            Toast.makeText(requireContext(), "No collections yet", Toast.LENGTH_SHORT).show()
+            return
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Delete a collection")
+            .setItems(names.toTypedArray()) { _, which ->
+                val name = names[which]
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Delete collection \"$name\"?")
+                    .setMessage("This only removes the collection, not any torrents.")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Delete") { _, _ ->
+                        collections.deleteCollection(name)
+                        if (activeCollection == name) activeCollection = null
+                        updateCollectionsButton()
+                        applyFilterSort()
+                    }
+                    .show()
+            }
+            .show()
+    }
+
+    private fun promptNewCollection(assignItem: TorrentItem?) {
+        val input = android.widget.EditText(requireContext()).apply {
+            hint = "Collection name"
+            setSingleLine()
+        }
+        val pad = (16 * resources.displayMetrics.density).toInt()
+        val container = android.widget.FrameLayout(requireContext()).apply {
+            setPadding(pad, pad / 2, pad, 0)
+            addView(input)
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("New collection")
+            .setView(container)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Create") { _, _ ->
+                val name = input.text?.toString()?.trim().orEmpty()
+                if (name.isBlank()) return@setPositiveButton
+                collections.createCollection(name)
+                if (assignItem != null) {
+                    collections.add(name, assignItem.id)
+                    Toast.makeText(requireContext(), "Added to \"$name\"", Toast.LENGTH_SHORT).show()
+                }
+                applyFilterSort()
+            }
+            .show()
+    }
+
+    /** Long-press action: toggle a torrent's membership across collections. */
+    private fun showAssignDialog(item: TorrentItem) {
+        val names = collections.names()
+        if (names.isEmpty()) {
+            promptNewCollection(assignItem = item)
+            return
+        }
+        val checked = BooleanArray(names.size) { item.id in collections.idsIn(names[it]) }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(item.filename)
+            .setMultiChoiceItems(names.toTypedArray(), checked) { _, which, isChecked ->
+                if (isChecked) collections.add(names[which], item.id)
+                else collections.remove(names[which], item.id)
+            }
+            .setNeutralButton(getString(com.debrid.browser.R.string.new_collection)) { _, _ ->
+                promptNewCollection(assignItem = item)
+            }
+            .setPositiveButton("Done") { _, _ -> applyFilterSort() }
+            .show()
     }
 
     // ---- Actions ----------------------------------------------------------
@@ -207,6 +326,7 @@ class LibraryFragment : Fragment() {
                     try {
                         api.deleteTorrent(item.id)
                         all = all.filterNot { it.id == item.id }
+                        collections.names().forEach { collections.remove(it, item.id) }
                         applyFilterSort()
                         Toast.makeText(requireContext(), "Deleted", Toast.LENGTH_SHORT).show()
                     } catch (e: Exception) {

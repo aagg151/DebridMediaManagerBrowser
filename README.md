@@ -8,7 +8,7 @@ native Real-Debrid layer for downloading, playing, deleting and organizing your 
 | Tab | What it is |
 |-----|------------|
 | **Browse** | Full-screen WebView of the DMM site — search, browse and organize exactly as on the website. In-page file links are captured and queued into the native download manager. |
-| **Library** | Native list of your Real-Debrid torrents (pulled from the RD API). Tap an item to pick a file, then **Play** (built-in player) or **Download**. The trash icon **deletes** the torrent from your account. Filter box + a **Sort** toggle (Date / Name / Size) for organizing. |
+| **Library** | Native list of your Real-Debrid torrents (pulled from the RD API). Tap an item to pick a file, then **Play** (built-in player) or **Download**. The trash icon **deletes** the torrent from your account. Filter box + a **Sort** toggle (Date / Name / Size). **Long-press** an item to add it to a **Collection**; use the **Collection** button to create/filter/manage collections (local folders for organizing). |
 | **Downloads** | Native download queue backed by Android's `DownloadManager`, with live progress. Completed files get a **Play** button; remove clears them. Files land in `Movies/DebridBrowser/`. |
 
 Videos play in a built-in **Media3 / ExoPlayer** full-screen player (streams and downloaded files).
@@ -33,6 +33,24 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" ./gradlew :app:assembleD
 Output: `app/build/outputs/apk/debug/app-debug.apk`
 
 Or just open the folder in Android Studio and press **Run**.
+
+### Signed release build
+
+Release signing reads its credentials from environment variables (nothing secret is committed).
+The keystore lives at `release.keystore` in the project root (gitignored — **keep a backup**; you
+need the *same* keystore to ship upgrades that install over an existing copy).
+
+```bash
+export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"
+export RELEASE_STORE_FILE="release.keystore"
+export RELEASE_STORE_PASSWORD="<your-store-password>"
+export RELEASE_KEY_ALIAS="debridbrowser"
+export RELEASE_KEY_PASSWORD="<your-key-password>"
+./gradlew :app:assembleRelease
+```
+
+Output: `app/build/outputs/apk/release/app-release.apk` (signed, V2). If the env vars are absent
+the release build is simply left unsigned, so CI without the keystore still succeeds.
 
 ## Install on a device
 

@@ -11,7 +11,8 @@ import com.debrid.browser.databinding.ItemLibraryBinding
 
 class LibraryAdapter(
     private val onOpen: (TorrentItem) -> Unit,
-    private val onDelete: (TorrentItem) -> Unit
+    private val onDelete: (TorrentItem) -> Unit,
+    private val onLongPress: (TorrentItem) -> Unit
 ) : ListAdapter<TorrentItem, LibraryAdapter.VH>(DIFF) {
 
     inner class VH(val b: ItemLibraryBinding) : RecyclerView.ViewHolder(b.root)
@@ -31,6 +32,7 @@ class LibraryAdapter(
                 if (item.isReady) 0xFF2E7D32.toInt() else 0xFFF9A825.toInt()
             )
             root.setOnClickListener { onOpen(item) }
+            root.setOnLongClickListener { onLongPress(item); true }
             deleteButton.setOnClickListener { onDelete(item) }
             root.isEnabled = true
         }
