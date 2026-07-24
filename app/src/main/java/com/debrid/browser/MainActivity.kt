@@ -9,12 +9,18 @@ import androidx.core.app.ActivityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.debrid.browser.databinding.ActivityMainBinding
 import com.debrid.browser.ui.BrowseFragment
 import com.debrid.browser.ui.DownloadsFragment
 import com.debrid.browser.ui.LibraryFragment
 import com.debrid.browser.ui.SettingsActivity
+
+/** Implemented by tabs that need to react immediately when Offline mode is toggled. */
+interface OfflineAware {
+    fun onOfflineChanged(offline: Boolean)
+}
 
 class MainActivity : AppCompatActivity() {
 
@@ -55,8 +61,22 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Offline-mode toggle.
+        binding.offlineSwitch.isChecked = App.instance.prefs.offlineMode
+        binding.offlineSwitch.setOnCheckedChangeListener { _, checked ->
+            App.instance.prefs.offlineMode = checked
+            Toast.makeText(
+                this,
+                getString(if (checked) R.string.offline_on_toast else R.string.offline_off_toast),
+                Toast.LENGTH_SHORT
+            ).show()
+            (current as? OfflineAware)?.onOfflineChanged(checked)
+            if (checked) goToDownloads()
+        }
+
         if (savedInstanceState == null) {
-            binding.bottomNav.selectedItemId = R.id.nav_browse
+            binding.bottomNav.selectedItemId =
+                if (App.instance.prefs.offlineMode) R.id.nav_downloads else R.id.nav_browse
         }
 
         // Let the Browse tab's WebView consume Back for in-page navigation.
@@ -68,6 +88,10 @@ class MainActivity : AppCompatActivity() {
                 isEnabled = true
             }
         })
+    }
+
+    fun goToDownloads() {
+        binding.bottomNav.selectedItemId = R.id.nav_downloads
     }
 
     private fun show(fragment: Fragment, titleRes: Int): Boolean {

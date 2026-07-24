@@ -39,18 +39,21 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.tokenInput.setText(prefs.apiToken)
         binding.urlInput.setText(prefs.dmmUrl)
+        binding.vlcSwitch.isChecked = prefs.preferVlc
         binding.externalPlayerSwitch.isChecked = prefs.preferExternalPlayer
 
         binding.saveButton.setOnClickListener { save() }
         binding.testButton.setOnClickListener { testToken() }
         binding.getTokenButton.setOnClickListener { openTokenPage() }
         binding.pasteButton.setOnClickListener { pasteFromClipboard() }
+        binding.installVlcButton.setOnClickListener { Playback.openVlcInStore(this) }
     }
 
     private fun save() {
         prefs.apiToken = binding.tokenInput.text?.toString().orEmpty()
         val url = binding.urlInput.text?.toString()?.trim().orEmpty()
         prefs.dmmUrl = url.ifBlank { Prefs.DEFAULT_DMM_URL }
+        prefs.preferVlc = binding.vlcSwitch.isChecked
         prefs.preferExternalPlayer = binding.externalPlayerSwitch.isChecked
         Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
         finish()

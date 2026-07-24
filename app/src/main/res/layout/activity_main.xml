@@ -14,6 +14,29 @@
         app:titleTextColor="@color/white"
         style="@style/Widget.Material3.Toolbar" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/primary_dark"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/offline_mode"
+            android:textColor="@color/white"
+            android:textAppearance="?attr/textAppearanceLabelLarge" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/offlineSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
     <FrameLayout
         android:id="@+id/fragmentContainer"
         android:layout_width="match_parent"

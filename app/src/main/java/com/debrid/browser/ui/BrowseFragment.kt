@@ -11,13 +11,17 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.debrid.browser.App
+import com.debrid.browser.MainActivity
+import com.debrid.browser.OfflineAware
+import com.debrid.browser.data.Net
 import com.debrid.browser.databinding.FragmentBrowseBinding
 import com.debrid.browser.download.DownloadManagerHelper
 
 /** Full-screen WebView wrapping the Debrid Media Manager site for browse / search / organize. */
-class BrowseFragment : Fragment() {
+class BrowseFragment : Fragment(), OfflineAware {
 
     private var _binding: FragmentBrowseBinding? = null
     private val binding get() = _binding!!
@@ -50,19 +54,52 @@ class BrowseFragment : Fragment() {
         }
         web.webChromeClient = mainChromeClient()
 
-        // Route any direct file download triggered inside the page to the native queue.
+        // Route any direct file download triggered inside the page to the native queue,
+        // unless offline mode / no connectivity means downloads are paused.
         web.setDownloadListener { url, _, contentDisposition, _, _ ->
+            if (!Net.downloadsAllowed(requireContext())) {
+                Toast.makeText(requireContext(),
+                    getString(com.debrid.browser.R.string.offline_downloads_disabled),
+                    Toast.LENGTH_LONG).show()
+                return@setDownloadListener
+            }
             val name = guessName(url, contentDisposition)
             DownloadManagerHelper.enqueue(requireContext(), url, name)
         }
 
         binding.swipeRefresh.setOnRefreshListener {
-            web.reload()
+            if (Net.isOffline(requireContext())) applyOffline() else web.reload()
             binding.swipeRefresh.isRefreshing = false
         }
 
-        if (savedInstanceState == null) {
-            web.loadUrl(App.instance.prefs.dmmUrl)
+        binding.offlineGoDownloads.setOnClickListener {
+            (activity as? MainActivity)?.goToDownloads()
+        }
+
+        applyOffline()
+    }
+
+    override fun onOfflineChanged(offline: Boolean) = applyOffline()
+
+    override fun onResume() {
+        super.onResume()
+        applyOffline()
+    }
+
+    /** Show the offline card (and skip network) when offline; otherwise load DMM. */
+    private fun applyOffline() {
+        val b = _binding ?: return
+        val offline = Net.isOffline(requireContext())
+        b.offlineOverlay.visibility = if (offline) View.VISIBLE else View.GONE
+        if (offline) {
+            b.offlineText.text = getString(
+                if (App.instance.prefs.offlineMode)
+                    com.debrid.browser.R.string.offline_browse_message
+                else
+                    com.debrid.browser.R.string.offline_no_connection
+            )
+        } else if (b.webView.url == null) {
+            b.webView.loadUrl(App.instance.prefs.dmmUrl)
         }
     }
 

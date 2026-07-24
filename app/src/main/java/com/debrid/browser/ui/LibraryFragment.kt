@@ -14,7 +14,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.debrid.browser.App
+import com.debrid.browser.MainActivity
+import com.debrid.browser.OfflineAware
 import com.debrid.browser.Util
+import com.debrid.browser.data.Net
 import com.debrid.browser.data.TorrentFile
 import com.debrid.browser.data.TorrentInfo
 import com.debrid.browser.data.TorrentItem
@@ -24,7 +27,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 /** Native Real-Debrid library: browse torrents, then play / download / delete individual files. */
-class LibraryFragment : Fragment() {
+class LibraryFragment : Fragment(), OfflineAware {
 
     private var _binding: FragmentLibraryBinding? = null
     private val binding get() = _binding!!
@@ -77,7 +80,17 @@ class LibraryFragment : Fragment() {
         if (all.isEmpty()) refresh()
     }
 
+    override fun onOfflineChanged(offline: Boolean) = refresh()
+
     private fun refresh() {
+        if (App.instance.prefs.offlineMode) {
+            showOfflinePlaceholder(getString(com.debrid.browser.R.string.offline_browse_message))
+            return
+        }
+        if (!Net.isOnline(requireContext())) {
+            showOfflinePlaceholder(getString(com.debrid.browser.R.string.offline_no_connection))
+            return
+        }
         if (!App.instance.prefs.hasToken) {
             showEmpty(getString(com.debrid.browser.R.string.no_token_hint))
             binding.retryButton.text = getString(com.debrid.browser.R.string.open_settings)
@@ -146,6 +159,13 @@ class LibraryFragment : Fragment() {
         adapter.submitList(emptyList())
         binding.emptyText.text = msg
         binding.emptyView.visibility = View.VISIBLE
+    }
+
+    private fun showOfflinePlaceholder(msg: String) {
+        showEmpty(msg)
+        binding.retryButton.text = getString(com.debrid.browser.R.string.go_to_downloads)
+        binding.retryButton.setOnClickListener { (activity as? MainActivity)?.goToDownloads() }
+        binding.swipeRefresh.isRefreshing = false
     }
 
     // ---- Collections (local "folders") ------------------------------------
@@ -292,9 +312,17 @@ class LibraryFragment : Fragment() {
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> resolveAnd(info, file) { url, name -> play(url, name) }
-                    1 -> resolveAnd(info, file) { url, name ->
-                        DownloadManagerHelper.enqueue(requireContext(), url, name)
-                        Toast.makeText(requireContext(), "Download started: $name", Toast.LENGTH_SHORT).show()
+                    1 -> {
+                        if (!Net.downloadsAllowed(requireContext())) {
+                            Toast.makeText(requireContext(),
+                                getString(com.debrid.browser.R.string.offline_downloads_disabled),
+                                Toast.LENGTH_LONG).show()
+                            return@setItems
+                        }
+                        resolveAnd(info, file) { url, name ->
+                            DownloadManagerHelper.enqueue(requireContext(), url, name)
+                            Toast.makeText(requireContext(), "Download started: $name", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
@@ -320,18 +348,7 @@ class LibraryFragment : Fragment() {
     }
 
     private fun play(url: String, name: String) {
-        if (App.instance.prefs.preferExternalPlayer) {
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(Uri.parse(url), "video/*")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                })
-                return
-            } catch (_: ActivityNotFoundException) {
-                Toast.makeText(requireContext(), "No external player found, using built-in", Toast.LENGTH_SHORT).show()
-            }
-        }
-        startActivity(PlayerActivity.intent(requireContext(), url, name))
+        Playback.play(requireContext(), Uri.parse(url), name)
     }
 
     private fun confirmDelete(item: TorrentItem) {

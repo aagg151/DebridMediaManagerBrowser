@@ -17,13 +17,25 @@
     <string name="rd_token_label">Real-Debrid API token</string>
     <string name="rd_token_hint">Paste token from real-debrid.com/apitoken</string>
     <string name="dmm_url_label">Debrid Media Manager URL</string>
-    <string name="external_player_label">Use external video player (VLC/MX) instead of built-in</string>
+    <string name="playback_label">Playback</string>
+    <string name="vlc_label">Play in VLC when installed (best format support)</string>
+    <string name="install_vlc">Install VLC</string>
+    <string name="external_player_label">Otherwise, use any external player (not built-in)</string>
     <string name="save">Save</string>
     <string name="test_connection">Test connection</string>
     <string name="get_token">Get token</string>
     <string name="paste">Paste</string>
     <string name="token_help">Tap \"Get token\", log in if needed, copy the token shown, come back and tap \"Paste\", then Save. The app does not read the token automatically — you must copy it from that page.</string>
     <string name="open_settings">Open Settings</string>
+
+    <!-- Offline -->
+    <string name="offline_mode">Offline mode</string>
+    <string name="offline_on_toast">Offline mode on — downloads and online browsing are paused.</string>
+    <string name="offline_off_toast">Offline mode off.</string>
+    <string name="offline_downloads_disabled">Offline mode is on — downloads are disabled.</string>
+    <string name="offline_browse_message">Offline mode is on.\n\nThe Browse and Library tabs need internet. Your downloaded videos are available offline in the Downloads tab.</string>
+    <string name="offline_no_connection">You appear to be offline.\n\nYour downloaded videos are available in the Downloads tab.</string>
+    <string name="go_to_downloads">Go to Downloads</string>
     <string name="collection_all">Collection: All</string>
     <string name="collection_prefix">Collection: %1$s</string>
     <string name="new_collection">＋ New collection…</string>

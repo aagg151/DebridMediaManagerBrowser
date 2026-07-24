@@ -21,12 +21,27 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_EXTERNAL_PLAYER, false)
         set(value) = sp.edit { putBoolean(KEY_EXTERNAL_PLAYER, value) }
 
+    /**
+     * Offline mode: the app makes no network requests and starts no downloads; only
+     * already-downloaded videos are usable (via the Downloads tab).
+     */
+    var offlineMode: Boolean
+        get() = sp.getBoolean(KEY_OFFLINE, false)
+        set(value) = sp.edit { putBoolean(KEY_OFFLINE, value) }
+
+    /** Prefer playing in VLC (best format support) when it is installed. Default on. */
+    var preferVlc: Boolean
+        get() = sp.getBoolean(KEY_PREFER_VLC, true)
+        set(value) = sp.edit { putBoolean(KEY_PREFER_VLC, value) }
+
     val hasToken: Boolean get() = apiToken.isNotBlank()
 
     companion object {
         private const val KEY_TOKEN = "rd_api_token"
         private const val KEY_DMM_URL = "dmm_url"
         private const val KEY_EXTERNAL_PLAYER = "external_player"
+        private const val KEY_OFFLINE = "offline_mode"
+        private const val KEY_PREFER_VLC = "prefer_vlc"
         const val DEFAULT_DMM_URL = "https://debridmediamanager.com"
     }
 }

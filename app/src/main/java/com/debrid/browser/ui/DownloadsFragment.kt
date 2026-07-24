@@ -1,6 +1,8 @@
 package com.debrid.browser.ui
 
 import android.app.DownloadManager
+import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -34,9 +36,17 @@ class DownloadsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         adapter = DownloadsAdapter(
             onPlay = { entry ->
-                val uri = entry.localUri
-                if (entry.isComplete && uri != null) {
-                    startActivity(PlayerActivity.intent(requireContext(), uri, entry.title))
+                if (entry.isComplete) {
+                    // Prefer a shareable content:// URI so external players (VLC) can read it;
+                    // fall back to the stored local URI for the built-in player.
+                    val dm = requireContext().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                    val uri = dm.getUriForDownloadedFile(entry.id)
+                        ?: entry.localUri?.let { Uri.parse(it) }
+                    if (uri != null) {
+                        Playback.play(requireContext(), uri, entry.title)
+                    } else {
+                        Toast.makeText(requireContext(), "File not found", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     Toast.makeText(requireContext(), "Not finished yet", Toast.LENGTH_SHORT).show()
                 }
