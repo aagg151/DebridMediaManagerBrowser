@@ -29,10 +29,15 @@ class BrowseFragment : Fragment(), OfflineAware {
     // Real-Debrid login opens a popup window; we host it on top of the main WebView.
     private var popupWeb: WebView? = null
 
+    // Deep-link handling (from the Discover tab).
+    private var pendingUrl: String? = null
+    private var hasLoaded = false
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentBrowseBinding.inflate(inflater, container, false)
+        hasLoaded = false
         return binding.root
     }
 
@@ -76,7 +81,8 @@ class BrowseFragment : Fragment(), OfflineAware {
             (activity as? MainActivity)?.goToDownloads()
         }
 
-        applyOffline()
+        val pu = pendingUrl
+        if (pu != null) loadUrl(pu) else applyOffline()
     }
 
     override fun onOfflineChanged(offline: Boolean) = applyOffline()
@@ -84,6 +90,16 @@ class BrowseFragment : Fragment(), OfflineAware {
     override fun onResume() {
         super.onResume()
         applyOffline()
+    }
+
+    /** Load a specific URL (e.g. a Discover deep-link). Queues it if the view isn't ready yet. */
+    fun loadUrl(url: String) {
+        val b = _binding
+        if (b == null) { pendingUrl = url; return }
+        pendingUrl = null
+        hasLoaded = true
+        b.offlineOverlay.visibility = View.GONE
+        b.webView.loadUrl(url)
     }
 
     /** Show the offline card (and skip network) when offline; otherwise load DMM. */
@@ -98,8 +114,9 @@ class BrowseFragment : Fragment(), OfflineAware {
                 else
                     com.debrid.browser.R.string.offline_no_connection
             )
-        } else if (b.webView.url == null) {
+        } else if (!hasLoaded && b.webView.url == null) {
             b.webView.loadUrl(App.instance.prefs.dmmUrl)
+            hasLoaded = true
         }
     }
 

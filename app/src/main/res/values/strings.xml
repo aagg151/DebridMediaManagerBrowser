@@ -5,6 +5,19 @@
     <string name="tab_browse">Browse</string>
     <string name="tab_library">Library</string>
     <string name="tab_downloads">Downloads</string>
+    <string name="tab_discover">Discover</string>
+
+    <!-- Discover -->
+    <string name="type_movies">Movies</string>
+    <string name="type_tv">TV Shows</string>
+    <string name="genre">Genre</string>
+    <string name="language">Language</string>
+    <string name="all">All</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">Hindi</string>
+    <string name="search_titles">Search titles…</string>
+    <string name="discover_no_key">Add your TMDB API key to browse and search by genre, type and language.</string>
+    <string name="discover_empty">No results. Try different filters.</string>
 
     <string name="filter_hint">Filter library…</string>
     <string name="sort_prefix">Sort: %1$s</string>
@@ -16,6 +29,10 @@
     <!-- Settings -->
     <string name="rd_token_label">Real-Debrid API token</string>
     <string name="rd_token_hint">Paste token from real-debrid.com/apitoken</string>
+    <string name="tmdb_label">TMDB API key (for Discover)</string>
+    <string name="tmdb_hint">Paste your TMDB v3 API key</string>
+    <string name="get_tmdb_key">Get TMDB key</string>
+    <string name="tmdb_help">Free at themoviedb.org → Settings → API → request a v3 (API Key). Powers the Discover tab (browse/search by genre, type and language). You can change it here anytime.</string>
     <string name="dmm_url_label">Debrid Media Manager URL</string>
     <string name="playback_label">Playback</string>
     <string name="vlc_label">Play in VLC when installed (best format support)</string>

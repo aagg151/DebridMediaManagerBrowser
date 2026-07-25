@@ -38,6 +38,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.tokenInput.setText(prefs.apiToken)
+        binding.tmdbInput.setText(prefs.tmdbKey)
         binding.urlInput.setText(prefs.dmmUrl)
         binding.vlcSwitch.isChecked = prefs.preferVlc
         binding.externalPlayerSwitch.isChecked = prefs.preferExternalPlayer
@@ -47,10 +48,14 @@ class SettingsActivity : AppCompatActivity() {
         binding.getTokenButton.setOnClickListener { openTokenPage() }
         binding.pasteButton.setOnClickListener { pasteFromClipboard() }
         binding.installVlcButton.setOnClickListener { Playback.openVlcInStore(this) }
+        binding.getTmdbKeyButton.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.themoviedb.org/settings/api")))
+        }
     }
 
     private fun save() {
         prefs.apiToken = binding.tokenInput.text?.toString().orEmpty()
+        prefs.tmdbKey = binding.tmdbInput.text?.toString().orEmpty()
         val url = binding.urlInput.text?.toString()?.trim().orEmpty()
         prefs.dmmUrl = url.ifBlank { Prefs.DEFAULT_DMM_URL }
         prefs.preferVlc = binding.vlcSwitch.isChecked

@@ -16,6 +16,13 @@ class Prefs(context: Context) {
         get() = sp.getString(KEY_DMM_URL, DEFAULT_DMM_URL) ?: DEFAULT_DMM_URL
         set(value) = sp.edit { putString(KEY_DMM_URL, value.trim()) }
 
+    /** TMDB v3 API key, used by the native Discover screen. */
+    var tmdbKey: String
+        get() = sp.getString(KEY_TMDB, "") ?: ""
+        set(value) = sp.edit { putString(KEY_TMDB, value.trim()) }
+
+    val hasTmdbKey: Boolean get() = tmdbKey.isNotBlank()
+
     /** When true, videos are handed off to an external player via an intent instead of the built-in one. */
     var preferExternalPlayer: Boolean
         get() = sp.getBoolean(KEY_EXTERNAL_PLAYER, false)
@@ -39,6 +46,7 @@ class Prefs(context: Context) {
     companion object {
         private const val KEY_TOKEN = "rd_api_token"
         private const val KEY_DMM_URL = "dmm_url"
+        private const val KEY_TMDB = "tmdb_key"
         private const val KEY_EXTERNAL_PLAYER = "external_player"
         private const val KEY_OFFLINE = "offline_mode"
         private const val KEY_PREFER_VLC = "prefer_vlc"

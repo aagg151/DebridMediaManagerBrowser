@@ -11,8 +11,8 @@ android {
         applicationId = "com.debrid.browser"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 6
+        versionName = "1.5"
     }
 
     signingConfigs {
@@ -72,8 +72,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
 
-    // Networking (Real-Debrid API)
+    // Networking (Real-Debrid + TMDB APIs)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Image loading (TMDB posters)
+    implementation("io.coil-kt:coil:2.7.0")
 
     // Media3 / ExoPlayer (built-in player)
     implementation("androidx.media3:media3-exoplayer:1.4.1")

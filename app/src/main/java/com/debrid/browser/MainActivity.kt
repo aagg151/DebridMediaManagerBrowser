@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.debrid.browser.databinding.ActivityMainBinding
 import com.debrid.browser.ui.BrowseFragment
+import com.debrid.browser.ui.DiscoverFragment
 import com.debrid.browser.ui.DownloadsFragment
 import com.debrid.browser.ui.LibraryFragment
 import com.debrid.browser.ui.SettingsActivity
@@ -26,6 +27,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+    private val discover by lazy { DiscoverFragment() }
     private val browse by lazy { BrowseFragment() }
     private val library by lazy { LibraryFragment() }
     private val downloads by lazy { DownloadsFragment() }
@@ -54,6 +56,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
+                R.id.nav_discover -> show(discover, R.string.tab_discover)
                 R.id.nav_browse -> show(browse, R.string.tab_browse)
                 R.id.nav_library -> show(library, R.string.tab_library)
                 R.id.nav_downloads -> show(downloads, R.string.tab_downloads)
@@ -76,7 +79,7 @@ class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             binding.bottomNav.selectedItemId =
-                if (App.instance.prefs.offlineMode) R.id.nav_downloads else R.id.nav_browse
+                if (App.instance.prefs.offlineMode) R.id.nav_downloads else R.id.nav_discover
         }
 
         // Let the Browse tab's WebView consume Back for in-page navigation.
@@ -92,6 +95,12 @@ class MainActivity : AppCompatActivity() {
 
     fun goToDownloads() {
         binding.bottomNav.selectedItemId = R.id.nav_downloads
+    }
+
+    /** Switch to the Browse (DMM) tab and load the given URL — used by Discover deep-links. */
+    fun openInBrowse(url: String) {
+        binding.bottomNav.selectedItemId = R.id.nav_browse
+        browse.loadUrl(url)
     }
 
     private fun show(fragment: Fragment, titleRes: Int): Boolean {
