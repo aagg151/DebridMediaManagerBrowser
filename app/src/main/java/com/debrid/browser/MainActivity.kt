@@ -33,6 +33,10 @@ class MainActivity : AppCompatActivity() {
     private val downloads by lazy { DownloadsFragment() }
     private var current: Fragment? = null
 
+    private var currentTabId = R.id.nav_discover
+    private val tabBackStack = ArrayDeque<Int>()
+    private var suppressBackStackPush = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -55,6 +59,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.bottomNav.setOnItemSelectedListener { item ->
+            if (!suppressBackStackPush && item.itemId != currentTabId) {
+                // Record the tab we're leaving so Back can return to it.
+                tabBackStack.removeAll { it == item.itemId }
+                tabBackStack.addLast(currentTabId)
+            }
+            currentTabId = item.itemId
             when (item.itemId) {
                 R.id.nav_discover -> show(discover, "discover", R.string.tab_discover)
                 R.id.nav_browse -> show(browse, "browse", R.string.tab_browse)
@@ -78,14 +88,29 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (savedInstanceState == null) {
-            binding.bottomNav.selectedItemId =
+            val defaultTab =
                 if (App.instance.prefs.offlineMode) R.id.nav_downloads else R.id.nav_discover
+            currentTabId = defaultTab
+            suppressBackStackPush = true
+            binding.bottomNav.selectedItemId = defaultTab
+            suppressBackStackPush = false
         }
 
-        // Let the Browse tab's WebView consume Back for in-page navigation.
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if ((current as? BrowseFragment)?.onBackPressed() == true) return
+                // 1) Walk the Browse WebView's own history (and close any login popup).
+                if (currentTabId == R.id.nav_browse &&
+                    (current as? BrowseFragment)?.onBackPressed() == true
+                ) return
+                // 2) Otherwise return to the previous tab (e.g. Discover), keeping its state.
+                if (tabBackStack.isNotEmpty()) {
+                    val prev = tabBackStack.removeLast()
+                    suppressBackStackPush = true
+                    binding.bottomNav.selectedItemId = prev
+                    suppressBackStackPush = false
+                    return
+                }
+                // 3) Nothing left → default behavior (leave the app).
                 isEnabled = false
                 onBackPressedDispatcher.onBackPressed()
                 isEnabled = true
