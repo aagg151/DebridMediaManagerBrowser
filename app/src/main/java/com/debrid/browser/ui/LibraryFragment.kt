@@ -80,6 +80,11 @@ class LibraryFragment : Fragment(), OfflineAware {
         if (all.isEmpty()) refresh()
     }
 
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden && all.isEmpty()) refresh()
+    }
+
     override fun onOfflineChanged(offline: Boolean) = refresh()
 
     private fun refresh() {

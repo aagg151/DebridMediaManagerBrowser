@@ -56,10 +56,10 @@ class MainActivity : AppCompatActivity() {
 
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_discover -> show(discover, R.string.tab_discover)
-                R.id.nav_browse -> show(browse, R.string.tab_browse)
-                R.id.nav_library -> show(library, R.string.tab_library)
-                R.id.nav_downloads -> show(downloads, R.string.tab_downloads)
+                R.id.nav_discover -> show(discover, "discover", R.string.tab_discover)
+                R.id.nav_browse -> show(browse, "browse", R.string.tab_browse)
+                R.id.nav_library -> show(library, "library", R.string.tab_library)
+                R.id.nav_downloads -> show(downloads, "downloads", R.string.tab_downloads)
                 else -> false
             }
         }
@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         // Let the Browse tab's WebView consume Back for in-page navigation.
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (current === browse && browse.onBackPressed()) return
+                if ((current as? BrowseFragment)?.onBackPressed() == true) return
                 isEnabled = false
                 onBackPressedDispatcher.onBackPressed()
                 isEnabled = true
@@ -100,15 +100,28 @@ class MainActivity : AppCompatActivity() {
     /** Switch to the Browse (DMM) tab and load the given URL — used by Discover deep-links. */
     fun openInBrowse(url: String) {
         binding.bottomNav.selectedItemId = R.id.nav_browse
-        browse.loadUrl(url)
+        (current as? BrowseFragment)?.loadUrl(url)
     }
 
-    private fun show(fragment: Fragment, titleRes: Int): Boolean {
-        if (current === fragment) return true
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, fragment)
-            .commit()
-        current = fragment
+    /**
+     * Add/hide/show (never replace) so each tab's view — notably the Browse WebView and its
+     * page/scroll/history — is retained when switching tabs. Reuses fragments restored by the
+     * FragmentManager after recreation to avoid duplicates.
+     */
+    private fun show(fragment: Fragment, tag: String, titleRes: Int): Boolean {
+        val fm = supportFragmentManager
+        val existing = fm.findFragmentByTag(tag)
+        val target = existing ?: fragment
+        if (current === target) {
+            supportActionBar?.setTitle(titleRes)
+            return true
+        }
+        val tx = fm.beginTransaction()
+        current?.let { tx.hide(it) }
+        if (existing == null) tx.add(R.id.fragmentContainer, fragment, tag)
+        tx.show(target)
+        tx.commitNow()
+        current = target
         supportActionBar?.setTitle(titleRes)
         return true
     }

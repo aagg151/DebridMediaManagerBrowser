@@ -106,6 +106,11 @@ class DiscoverFragment : Fragment(), OfflineAware {
         if (items.isEmpty()) start()
     }
 
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden && items.isEmpty()) start()
+    }
+
     override fun onOfflineChanged(offline: Boolean) = start()
 
     private fun start() {

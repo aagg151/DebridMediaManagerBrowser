@@ -68,13 +68,18 @@ class DownloadsFragment : Fragment() {
         binding.swipeRefresh.setOnRefreshListener { reloadOnce() }
     }
 
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden) reloadOnce()
+    }
+
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
         super.onViewStateRestored(savedInstanceState)
         // Poll for live progress only while the tab is visible.
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
-                    reloadOnce()
+                    if (!isHidden) reloadOnce()
                     delay(1500)
                 }
             }
