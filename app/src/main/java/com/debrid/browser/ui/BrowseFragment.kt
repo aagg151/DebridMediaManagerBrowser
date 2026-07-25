@@ -55,6 +55,8 @@ class BrowseFragment : Fragment(), OfflineAware {
             override fun onPageFinished(view: WebView?, url: String?) {
                 binding.progress.visibility = View.GONE
                 CookieManager.getInstance().flush()
+                // Install per-page scroll restoration so Back returns to your place in a list.
+                view?.evaluateJavascript(SCROLL_RESTORE_JS, null)
             }
         }
         web.webChromeClient = mainChromeClient()
@@ -211,5 +213,37 @@ class BrowseFragment : Fragment(), OfflineAware {
         _binding?.webView?.destroy()
         _binding = null
         super.onDestroyView()
+    }
+
+    companion object {
+        /**
+         * Saves the scroll position per page (path+query) and restores it on back/forward
+         * navigation, so returning from a detail page to a list keeps your place — even while
+         * the list re-renders. Installs once per document; survives SPA (pushState) navigations.
+         */
+        private const val SCROLL_RESTORE_JS = """
+(function(){
+  if (window.__srInstalled) return; window.__srInstalled = true;
+  try { history.scrollRestoration = 'manual'; } catch(e){}
+  var store = {};
+  try { store = JSON.parse(sessionStorage.getItem('__dmm_sr')||'{}'); } catch(e){ store = {}; }
+  function key(){ return location.pathname + location.search; }
+  function save(){ try { store[key()] = window.scrollY; sessionStorage.setItem('__dmm_sr', JSON.stringify(store)); } catch(e){} }
+  function restore(){
+    var y = store[key()]; if (y == null) return;
+    var tries = 0;
+    var iv = setInterval(function(){
+      window.scrollTo(0, y);
+      if (++tries > 30 || Math.abs(window.scrollY - y) < 4) clearInterval(iv);
+    }, 50);
+  }
+  var t; window.addEventListener('scroll', function(){ clearTimeout(t); t = setTimeout(save, 150); }, {passive:true});
+  window.addEventListener('pagehide', save);
+  var _push = history.pushState;
+  history.pushState = function(){ save(); return _push.apply(history, arguments); };
+  window.addEventListener('popstate', function(){ setTimeout(restore, 60); });
+  setTimeout(restore, 120);
+})();
+"""
     }
 }
